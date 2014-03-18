@@ -38,6 +38,8 @@
 // cells
 #import "UVLCollectionViewImageCell.h"
 
+#define USE_TRANSITIONS NO
+
 @interface UVLCollectionViewController ()<UIGestureRecognizerDelegate>
 
 @property (nonatomic, strong) NSArray *assets;
@@ -125,9 +127,9 @@
     [toolbar setItems:barButtonItems];
     
     // pan stuff
-//    self.panGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(onPanGesture:)];
-//    self.panGesture.delegate = self;
-//    [self.collectionView addGestureRecognizer:self.panGesture];
+    //    self.panGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(onPanGesture:)];
+    //    self.panGesture.delegate = self;
+    //    [self.collectionView addGestureRecognizer:self.panGesture];
 }
 
 - (void)didReceiveMemoryWarning
@@ -175,91 +177,120 @@
     {
         // list
         
-        self.view.userInteractionEnabled = NO;
-        self.panGesture.enabled = NO;
-        
-        [self.collectionView setCollectionViewLayout:self.listLayout animated:YES completion:^(BOOL finished) {
-           s_self.collectionView.decelerationRate = UIScrollViewDecelerationRateNormal;
-            s_self.view.userInteractionEnabled = YES;
-            s_self.panGesture.enabled = YES;
-        }];
+        if (USE_TRANSITIONS)
+        {
+            self.view.userInteractionEnabled = NO;
+            self.panGesture.enabled = NO;
+            
+            [self.collectionView setCollectionViewLayout:self.listLayout animated:YES completion:^(BOOL finished) {
+                s_self.collectionView.decelerationRate = UIScrollViewDecelerationRateNormal;
+                s_self.view.userInteractionEnabled = YES;
+                s_self.panGesture.enabled = YES;
+            }];
+        }
+        else
+        {
+            [self.collectionView setCollectionViewLayout:self.listLayout animated:NO];
+            [self.collectionView setContentOffset:CGPointZero animated:NO];
+        }
     }
     else if (index == 1 && ![self.collectionView.collectionViewLayout isEqual:self.gridLayout])
     {
         // grid
-        
-        self.view.userInteractionEnabled = NO;
-        self.panGesture.enabled = NO;
-        
-        [self.collectionView setCollectionViewLayout:self.gridLayout animated:YES completion:^(BOOL finished) {
-            s_self.collectionView.decelerationRate = UIScrollViewDecelerationRateNormal;
-            s_self.view.userInteractionEnabled = YES;
-        }];
+        if (USE_TRANSITIONS)
+        {
+            self.view.userInteractionEnabled = NO;
+            self.panGesture.enabled = NO;
+            
+            [self.collectionView setCollectionViewLayout:self.gridLayout animated:YES completion:^(BOOL finished) {
+                s_self.collectionView.decelerationRate = UIScrollViewDecelerationRateNormal;
+                s_self.view.userInteractionEnabled = YES;
+            }];
+        }
+        else
+        {
+            [self.collectionView setCollectionViewLayout:self.gridLayout animated:NO];
+            [self.collectionView setContentOffset:CGPointZero animated:NO];
+        }
     }
     else if (index == 2 && ![self.collectionView.collectionViewLayout isEqual:self.transformLayout])
     {
         // transform
-        
-        self.view.userInteractionEnabled = NO;
-        self.panGesture.enabled = NO;
-        
-        CGPoint targetContentOffset = [self.transformLayout targetContentOffsetForCollectionView:self.collectionView];
-        
-        UICollectionViewLayout *currentLayout = self.collectionView.collectionViewLayout;
-        if ([currentLayout respondsToSelector:@selector(setIsTransitioning:)])
+        if (USE_TRANSITIONS)
         {
-            [(id)currentLayout setIsTransitioning:YES];
-            [currentLayout invalidateLayout];
-        }
-        
-        self.transitionLayout = [[UVLCollectionViewTransitionLayout alloc] initWithCurrentLayout:self.collectionView.collectionViewLayout nextLayout:self.transformLayout];
-        self.transitionLayout.targetContentOffset = targetContentOffset;
-        [self.collectionView setCollectionViewLayout:self.transitionLayout];
-        
-        self.transitionProgress = 0;
-        self.displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(onDisplayLinkTick:)];
-        [self.displayLink addToRunLoop:[NSRunLoop mainRunLoop] forMode:NSRunLoopCommonModes];
-        
-        self.completionBlock = ^() {
+            self.view.userInteractionEnabled = NO;
+            self.panGesture.enabled = NO;
+            
+            CGPoint targetContentOffset = [self.transformLayout targetContentOffsetForCollectionView:self.collectionView];
+            
+            UICollectionViewLayout *currentLayout = self.collectionView.collectionViewLayout;
             if ([currentLayout respondsToSelector:@selector(setIsTransitioning:)])
             {
-                [(id)currentLayout setIsTransitioning:NO];
+                [(id)currentLayout setIsTransitioning:YES];
+                [currentLayout invalidateLayout];
             }
             
-            [s_self.collectionView setCollectionViewLayout:s_self.transformLayout animated:YES];
-            [s_self.collectionView setContentOffset:targetContentOffset];
-            s_self.view.userInteractionEnabled = YES;
-            s_self.collectionView.decelerationRate = UIScrollViewDecelerationRateNormal;
-        };
+            self.transitionLayout = [[UVLCollectionViewTransitionLayout alloc] initWithCurrentLayout:self.collectionView.collectionViewLayout nextLayout:self.transformLayout];
+            self.transitionLayout.targetContentOffset = targetContentOffset;
+            [self.collectionView setCollectionViewLayout:self.transitionLayout];
+            
+            self.transitionProgress = 0;
+            self.displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(onDisplayLinkTick:)];
+            [self.displayLink addToRunLoop:[NSRunLoop mainRunLoop] forMode:NSRunLoopCommonModes];
+            
+            self.completionBlock = ^() {
+                if ([currentLayout respondsToSelector:@selector(setIsTransitioning:)])
+                {
+                    [(id)currentLayout setIsTransitioning:NO];
+                }
+                
+                [s_self.collectionView setCollectionViewLayout:s_self.transformLayout animated:YES];
+                [s_self.collectionView setContentOffset:targetContentOffset];
+                s_self.view.userInteractionEnabled = YES;
+                s_self.collectionView.decelerationRate = UIScrollViewDecelerationRateNormal;
+            };
+        }
+        else
+        {
+            [self.collectionView setCollectionViewLayout:self.transformLayout animated:NO];
+            [self.collectionView setContentOffset:CGPointZero animated:NO];
+        }
     }
     else if (index == 3 && ![self.collectionView.collectionViewLayout isEqual:self.swellLayout])
     {
         // swell
-        
-        self.view.userInteractionEnabled = NO;
-        self.panGesture.enabled = NO;
-        
-        [self.collectionView setContentOffset:CGPointZero animated:YES];
-        
-        CGPoint targetContentOffset = [self.swellLayout targetContentOffsetForCollectionView:self.collectionView];
-     
-        self.swellLayout.isTransitioning = YES;
-        
-        self.transitionLayout = [[UVLCollectionViewTransitionLayout alloc] initWithCurrentLayout:self.collectionView.collectionViewLayout nextLayout:self.swellLayout];
-        self.transitionLayout.targetContentOffset = targetContentOffset;
-        [self.collectionView setCollectionViewLayout:self.transitionLayout];
-        
-        self.transitionProgress = 0;
-        self.displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(onDisplayLinkTick:)];
-        [self.displayLink addToRunLoop:[NSRunLoop mainRunLoop] forMode:NSRunLoopCommonModes];
-        
-        self.completionBlock = ^() {
-            s_self.swellLayout.isTransitioning = NO;
-            [s_self.collectionView setCollectionViewLayout:s_self.swellLayout animated:YES];
-            [s_self.collectionView setContentOffset:targetContentOffset];
-            s_self.view.userInteractionEnabled = YES;
-            s_self.collectionView.decelerationRate = UIScrollViewDecelerationRateFast;
-        };
+        if (USE_TRANSITIONS)
+        {
+            self.view.userInteractionEnabled = NO;
+            self.panGesture.enabled = NO;
+            
+            [self.collectionView setContentOffset:CGPointZero animated:YES];
+            
+            CGPoint targetContentOffset = [self.swellLayout targetContentOffsetForCollectionView:self.collectionView];
+            
+            self.swellLayout.isTransitioning = YES;
+            
+            self.transitionLayout = [[UVLCollectionViewTransitionLayout alloc] initWithCurrentLayout:self.collectionView.collectionViewLayout nextLayout:self.swellLayout];
+            self.transitionLayout.targetContentOffset = targetContentOffset;
+            [self.collectionView setCollectionViewLayout:self.transitionLayout];
+            
+            self.transitionProgress = 0;
+            self.displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(onDisplayLinkTick:)];
+            [self.displayLink addToRunLoop:[NSRunLoop mainRunLoop] forMode:NSRunLoopCommonModes];
+            
+            self.completionBlock = ^() {
+                s_self.swellLayout.isTransitioning = NO;
+                [s_self.collectionView setCollectionViewLayout:s_self.swellLayout animated:YES];
+                [s_self.collectionView setContentOffset:targetContentOffset];
+                s_self.view.userInteractionEnabled = YES;
+                s_self.collectionView.decelerationRate = UIScrollViewDecelerationRateFast;
+            };
+        }
+        else
+        {
+            [self.collectionView setCollectionViewLayout:self.swellLayout animated:NO];
+            [self.collectionView setContentOffset:CGPointZero animated:NO];
+        }
     }
 }
 
