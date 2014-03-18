@@ -31,4 +31,6 @@
 
 @property (nonatomic, assign) BOOL isTransitioning;
 
+- (CGPoint)targetContentOffsetForCollectionView:(UICollectionView *)collectionView;
+
 @end

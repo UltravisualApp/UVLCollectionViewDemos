@@ -210,20 +210,18 @@
 }
 
 - (CGPoint)targetContentOffsetForCollectionView:(UICollectionView *)collectionView
-{
-    NSUInteger totalItems = [collectionView numberOfItemsInSection:0];
-    
-    CGFloat cellPercent = MAX(collectionView.contentOffset.y / kUIOptimalInterval, 0);
-    
-    NSUInteger currentIndex = MAX(MIN(floorf(cellPercent), totalItems - 1), 0);
-    CGFloat percentOffset = 1.f - fmodf(cellPercent, 1.f); // fmodf to 1 to get just the decimal part of the number
-    
-    if (percentOffset < 0.5f)
+{    
+    NSArray *indexPathsForVisibleItems = [collectionView indexPathsForVisibleItems];
+    NSInteger lowestInteger = NSIntegerMax;
+    for (NSIndexPath *indexPath in indexPathsForVisibleItems)
     {
-        currentIndex = MIN(currentIndex + 1, totalItems - 1);
+        if (indexPath.item < lowestInteger)
+            lowestInteger = indexPath.item;
     }
     
-    return CGPointMake(collectionView.contentOffset.x, kUIOptimalInterval * currentIndex);
+    NSIndexPath *targetIndexPath = [NSIndexPath indexPathForItem:lowestInteger inSection:0];
+    
+    return CGPointMake(collectionView.contentOffset.x, targetIndexPath.item * kUIOptimalInterval);
 }
 
 @end

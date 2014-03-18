@@ -137,4 +137,19 @@
     return CGPointMake(proposedContentOffset.x + offsetAdjustment, proposedContentOffset.y);
 }
 
+- (CGPoint)targetContentOffsetForCollectionView:(UICollectionView *)collectionView
+{
+    NSArray *indexPathsForVisibleItems = [collectionView indexPathsForVisibleItems];
+    NSInteger lowestInteger = NSIntegerMax;
+    for (NSIndexPath *indexPath in indexPathsForVisibleItems)
+    {
+        if (indexPath.item < lowestInteger)
+            lowestInteger = indexPath.item;
+    }
+    
+    NSIndexPath *targetIndexPath = [NSIndexPath indexPathForItem:lowestInteger inSection:0];
+    
+    return CGPointMake(collectionView.contentOffset.x, targetIndexPath.item * self.itemSize.height + targetIndexPath.item * self.minimumLineSpacing);
+}
+
 @end
